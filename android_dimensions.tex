@@ -1,0 +1,168 @@
+﻿
+\documentclass[a4paper,11pt]{article}
+
+\input{article_preamble}
+\input{config}
+
+\sybtitle{Android中的长度单位（\textcolor{red}{dp}）}
+\sybauthor{孙延宾}
+\sybdate{\today}
+
+\begin{document}
+\tt % I love Typewriter font.
+%%%%%%%% the title page and toc %%%%%%%%%%
+\pagestyle{header}
+\sybmaketitle
+\tableofcontents
+\newpage
+
+%%%%%%% the main content %%%%%%%%%
+\pagestyle{main}
+\setcounter{page}{1}
+
+\section[现有长度单位不可行]{现有长度单位不可行}
+首先我们要说明为什么使用物理单位是不行的。
+
+\subsection[物理长度单位]{物理长度单位}
+从人（开发者）的视角看，直接使用人类熟悉的长度单位是最简单最直观的，比如使用{\bf 厘米}。
+但是这样的话会丧失灵活性，比如一个4.8x4.8cm的按钮，在4.5寸屏幕和6寸屏幕上显示的大小一定
+是一样的，毕竟4.8cm在哪里都是一样的、不变的，如果它变了，那就太诡异了不是吗？
+这就要求开发者针对不同大小的屏幕物理尺寸设置不同的值，这一定是灾难性的。
+
+使用绝对长度是肯定不行的！
+
+\subsection[使用像素]{使用像素}
+可否直接使用像素呢，毕竟所有的尺寸都要转换成像素值才能显示到屏幕上，这是否可行呢？
+同样不可行。设想两个大小一样（2x1.5寸）的屏幕像素密度却不一样，一个160px/inch，一个320px/inch，
+那么一个48x48px的按钮在两个屏幕上看起来会相差很大（4倍），开发者同样需要根据不同的屏幕密度
+设置不同的尺寸，这同样是灾难性的。
+
+绑定屏幕物理尺寸是行不通的，同样，绑定屏幕像素密度也是不可行的！
+
+
+\section[新的长度单位]{新的长度单位}
+既然如此，我们来创建一个新的长度单位，这个长度单位要能克服以上两种长度单位的缺点才行，
+\begin{itemize}
+  \item 不随屏幕像素密度变化而变化
+  \item 可以随屏幕物理尺寸变化而变化
+\end{itemize}
+新的长度单位叫"dip"（device independent pixel，简称"dp"），它不是一个绝对长度单位（如米、厘米等），
+所以“1dp等于多少厘米？”这样的问题是毫无意义的，因为dp只是一个比例、一个倍数。
+
+不同的手机可以设置自己的比例值，比如A手机设置该比例值为"1.0"，那么1dp=1px，B手机设置该比例值
+为"1.99"，那么1dp=1.99px，这就是dp的含义，在系统内部自动将dp根据该比例值转换为px数。
+
+上面的比例比较好理解，但是现实中，android并不是这样定义dp的，它规定，
+
+\begin{center}
+    在像素密度为160的屏幕上，1dp=1px。
+\end{center}
+
+那么像素密度为320的屏幕上，1dp=2px，依次类推。各手机可以定义自己的屏幕像素密度，于是dp的比例值
+可以计算出来：
+
+$$1dp=\frac{DPI}{160}pixel$$
+
+DPI就是屏幕像素密度，在DisplayMetrics类里面，属性densityDpi指的就是它，而density指的就是那个“倍数”，
+那DPI是如何设定的呢？
+
+\begin{javacode}
+    // DisplayMetrics.java
+    private static int getDeviceDensity() {
+        // qemu.sf.lcd_density can be used to override ro.sf.lcd_density
+        // when running in the emulator, allowing for dynamic configurations.
+        // The reason for this is that ro.sf.lcd_density is write-once and is
+        // set by the init process when it parses build.prop before anything else.
+        return SystemProperties.getInt("qemu.sf.lcd_density",
+            SystemProperties.getInt("ro.sf.lcd_density", DENSITY_DEFAULT));
+    }
+\end{javacode}
+
+注意：要区分DPI跟屏幕的物理密度，DPI是可以随意设置的，而屏幕的物理密度是固定不变的！
+
+***问：
+\begin{itemize}
+  \item 联想A388t（5寸屏）\\
+  width=480, height=854, densityDpi=240, density=1.5, xdpi=239.05882, ydpi=241.01778
+  \item 小米1（4寸屏）\\
+  width=480, height=854, densityDpi=240, density=1.5, xdpi=254.0, ydpi=271.145
+\end{itemize}
+这两台手机的分辨率一样，dpi一样，density一样，可为什么一个是4寸屏，一个是5寸屏？
+
+***答：
+
+width, height, xdpi, ydpi, 4寸, 5寸，这些都是固定的，是屏幕的物理属性。但是densityDpi
+是可以设置的，完全可以设置为一样的值，它表示1dp=1.5px。另外，同一个48x48dp的按钮在
+这两个手机上大小（物理大小，可以用尺子测量的大小）是不一样的，因为两个按钮用同样
+数量的pixel表示，但是两个手机屏幕的物理像素密度是不一样的。
+
+
+\section[让APP自己做主]{让APP自己做主}
+
+APP可用自己决定使用多大的度量值，这些值在DisplayMetrics类里面设置，
+
+\begin{javacode}
+    DisplayMetrics metrics = new DisplayMetrics();
+    // 获取默认度量值
+    getWindowManager().getDefaultDisplay().getMetrics(metrics);
+    // 修改
+    metrics.density = 1.5f;
+    metrics.densityDpi = 240;
+    metrics.heightPixels = 1080;
+    metrics.widthPixels = 1920;
+    metrics.scaledDensity = 1.0f;
+    metrics.xdpi = 254.0f;
+    metrics.ydpi = 254.0f;
+    // 使用新的度量值
+    getResources().getDisplayMetrics().setTo(metrics);
+\end{javacode}
+
+
+\section[实用技巧]{实用技巧}
+
+\subsection[标准屏幕密度]{标准屏幕密度}
+
+\begin{tabular}{r|c|c}
+  % after \\: \hline or \cline{col1-col2} \cline{col3-col4} ...
+  type    & dpi & density \\\hline
+  ldpi    & 120 & 0.75 \\
+  \textcolor{red}{mdpi}    & \textcolor{red}{160} & \textcolor{red}{1.0} \\
+  hdpi    & 240 & 1.5 \\
+  xhdpi   & 320 & 2.0 \\
+  xxhdpi  & 480 & 3.0 \\
+  xxxhdpi & 640 & 4.0 \\
+\end{tabular}
+
+\subsection[常见分辨率]{常见分辨率}
+
+\begin{tabular}{r|l}
+  \hline
+    QVGA	& 240x320  \\
+    HVGA	& 320x480  \\
+    WVGA	& 480x800  \\
+    QWVGA	& 240x400  \\
+    720P	& 1280x720 \\
+    1080	& 1920x1080\\
+    2K		& 2560x1440\\
+  \hline
+\end{tabular}
+
+\subsection[常用命令]{常用命令}
+
+\begin{description}
+  \item[查看屏幕信息：] adb shell dumpsys display
+  \item[临时修改屏幕密度：] adb shell wm density <DPI>
+  \item[查看电池容量：] adb shell dumpsys batterystats | grep "Capacity"
+  \item[查看可用的服务：] adb shell dumpsys | grep "DUMP OF SERVICE"
+  \item[计算屏幕物理尺寸：] $\sqrt{(\frac{width}{xdpi})^2 + (\frac{height}{ydpi})^2}$，
+  如$\sqrt{(\frac{1080}{365.76})^2 + (\frac{1920}{369.454})^2} = 5.977$（6寸屏）
+\end{description}
+
+
+\section[参考文献]{参考文献}
+\begin{itemize}
+  \item https://developer.android.com/guide/practices/screens_support.html
+\end{itemize}
+
+\end{document}
+

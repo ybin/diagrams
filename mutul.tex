@@ -1,0 +1,97 @@
+﻿
+\documentclass[a4paper,11pt]{article}
+
+\input{article_preamble}
+\input{config}
+
+\sybtitle{Camera APP的互斥实现}
+\sybauthor{孙延宾}
+\sybdate{\today}
+
+\begin{document}
+\tt % I love Typewriter font.
+%%%%%%%% the title page and toc %%%%%%%%%%
+\pagestyle{header}
+\sybmaketitle
+\tableofcontents
+\newpage
+
+%%%%%%% the main content %%%%%%%%%
+\pagestyle{main}
+\setcounter{page}{1}
+
+\part[数据结构]{数据结构}
+互斥相关的数据结构只有一个：$ListPreference$，不过并非所有属性都与互斥相关，
+与互斥相关的只有红色的$mValue$、$mEnable$以及蓝色的三个$list$（list和map）。
+\vspace{2em}
+
+\input{listpref.tex}
+
+\vspace{2em}
+\begin{itemize}
+  \item mValue是一个length为2的数组，第一个元素表示其本来的值，第二个元素表示它跟别的功能冲突而被禁用时的临时值（一般为$off$）
+  \item mEnable表示互斥的结果，互斥的结果只有两个，要么打开、要么被关闭（有特例）
+  \item 蓝色的三个list表示与该preference冲突的功能点，注意功能点是与模式相关的，$auto$模式下的闪光灯跟$professional$模式下的闪光灯是不一样的。
+        其中的两个hashmap其实是表达一种“多对多”的关系：一个模式对应多个功能、一个功能也可以对应多个模式。
+\end{itemize}
+
+
+\part[操作流程]{操作流程}
+数据结构明确了，那$ListPreference$里的数据是如何修改的呢？答案就是$MutualHandle$，
+任何一个preference的打开、关闭，以及与其冲突的功能点设置都是在MutualHandle中操作的。
+
+该类主要做了两件事情：
+\begin{enumerate}
+  \item 为每一个可能存在冲突的功能点定义一个处理函数，注意这里的功能点与模式无关，它与上面定义的“功能点”不同。
+  \item 设置互斥的入口：$doMutualHandle(manager, key)$，即有preference变动就要到互斥里面来走一圈。
+\end{enumerate}
+
+下面是一个代码实例，
+
+\begin{javacode}
+/*
+ * xxxMutual:
+ *    当xxx功能（如flash）因为冲突（或取消冲突）而disable（或enable）时，
+ *    调用该函数来处理xxx的preference以及处理与该功能存在冲突的其他功能。
+ *
+ * enable: 打开还是关闭
+ * mutualState: 当该功能被关闭时要设置的值，一般为off，表示因为冲突而被关闭
+ * levelValue: 模式级别还是功能级别，
+ *     1. 模式级别表示在某个模式下该功能enable/disable
+ *     2. 功能级别表示该功能与某个功能冲突，注意功能是与模式相关的
+ * modeValue: 相关的模式
+ * lastMutualKey: 功能点，如flash，与modeValue组成具体的功能点
+ * beAssociate: 处理循环冲突。如A、B互相冲突，水火不容，A变动会引起B变动，
+ *     但是B变动是就不要再引起A变动了，否则就死循环了。
+ */
+private void xxxMutual(SettingManager manager, boolean enable, String mutualState,
+    int levelValue, String modeValue, String lastMutualKey, boolean beAssociate) {
+    // 1. 拿到pref对象，因为要修改的就是它
+    ListPreference pref = ((ListPreference)
+                SettingProvider.getListPreference(SettingFuncConstant.KEY_XXX));
+    if (pref == null)
+        return;
+    // 2. 把key添加到变动列表里，告知UI哪些preference有变动
+    manager.addChangedKey(pref.getKey());
+    // 3. 记录与pref冲突的功能点，并enable/disable pref
+    pref.setPriority(enable, levelValue, modeValue, lastMutualKey);
+    // 4. 如果pref是被disable了，那disable之后要怎么变化呢，
+    //    一般是将其值设置为"off"，或者0，如倒计时，等等
+    if (!pref.isEnable()) {
+        pref.setValue(mutualState, ListPreference.UPDATE_VALUE_MUTEX);
+    }
+    // 5. 避免循环冲突
+    if (!beAssociate)
+        return;
+    // 6. 最后，哪些功能点会与“我”冲突呢，你们该变得也赶紧变吧
+    if ("on".equals(pref.getValue())) {
+        supLightMutual(manager, false, PRIORITY_LEVEL_FUNCTION, modeValue,
+                       SettingFuncConstant.KEY_LIVE_SHOOT);
+    } else {
+        supLightMutual(manager, true, PRIORITY_LEVEL_FUNCTION, modeValue,
+                       SettingFuncConstant.KEY_LIVE_SHOOT);
+    }
+}
+\end{javacode}
+
+\end{document}

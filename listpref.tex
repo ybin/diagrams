@@ -1,0 +1,85 @@
+\begin{tikzpicture}
+
+\begin{struct}[ListPreference][]{ListPreference}{6cm}{2em}
+    \record{String mTitle;}
+    \record{CharSequence[] mEntries;}
+    \record{int mTitleIcon;}
+    \record{int mListIcons[];}
+
+    \record[minimum height=0.2em,fill=black]{}
+    \record{String mKey;}
+    \record[text=red]{String[] mValue=\{old, mutex\};}
+    \record{CharSequence[] mDefaultValues;}
+    \record{CharSequence[] mEntryValues;}
+    \record{boolean mSave;}
+    \record{boolean mLoaded;}
+    \record[text=red]{boolean mEnable;}
+
+    \record[minimum height=0.2em,fill=black]{}
+    \record[inner sep=0.5em]{ArrayList<String> \\ \textcolor{blue}{mModeLevelList};}
+    \record[inner sep=0.5em]{HashMap<String, String> \\ \textcolor{blue}{mFunctionLevelList};}
+    \record[inner sep=0.5em]{HashMap<String, String> \\ \textcolor{blue}{mFunctionPriorityList};}
+
+    \record[minimum height=0.2em,fill=black]{}
+    \record[inner sep=0.5em]{SharedPreferences \\mSharedPreferences;}
+    \record[inner sep=0.5em]{OnPreferenceSettingListener \\mListener;}
+\end{struct}
+
+\begin{arr}[][right=3cm of ListPreference-14]{snapmode list}[1.5cm][2em]
+    \elem{auto}
+    \elem{beauty}
+    \elem{pro}
+    \elem{...}
+    \elem{}
+\end{arr}
+
+\begin{struct}[][right=2cm of ListPreference-16]{priolist-0}{2cm}{2em}
+    \record{mode-1}
+    \record{mode-2}
+    \record{mode-3}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{mode-4}
+    \record{mode-5}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{...}
+\end{struct}
+
+\begin{struct}[][right=0.05em of priolist-0-0]{priolist-1}{2cm}{2em}
+    \record{key-1}
+    \record{key-1}
+    \record{key-1}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{key-2}
+    \record{key-2}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{...}
+\end{struct}
+
+\begin{struct}[][right=8cm of ListPreference-15]{funclist-0}{2cm}{2em}
+    \record{key-1}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{key-2}
+    \record{key-3}
+    \record{key-4}
+    \record{key-5}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{...}
+\end{struct}
+
+\begin{struct}[][right=0.05em of funclist-0-0]{funclist-1}{2cm}{2em}
+    \record{mode-5}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{mode-1}
+    \record{mode-1}
+    \record{mode-1}
+    \record{mode-1}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{...}
+\end{struct}
+
+%%% lines
+\draw[arrow] (ListPreference-14) -- (snapmode list);
+\draw[arrow] (ListPreference-15) -- (funclist-0-0);
+\draw[arrow] (ListPreference-16) -- (priolist-0-0);
+
+\end{tikzpicture}

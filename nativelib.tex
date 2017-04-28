@@ -1,0 +1,88 @@
+﻿
+\documentclass[a4paper,11pt]{article}
+
+\input{article_preamble}
+\input{config}
+
+\sybtitle{Android N native API}
+\sybauthor{孙延宾}
+\sybdate{\today}
+
+\begin{document}
+\tt % I love Typewriter font.
+%%%%%%%% the title page and toc %%%%%%%%%%
+\pagestyle{header}
+\sybmaketitle
+\tableofcontents
+\newpage
+
+%%%%%%% the main content %%%%%%%%%
+\pagestyle{main}
+\setcounter{page}{1}
+
+从Android N(API 24)开始，android限制应app使用native API，只允许app使用公开的API，
+这些API会进行CTS测试，从而保证兼容性和稳定性。API以“.so”文件的形式发布。
+
+\section[影响范围]{影响范围}
+只有普通app受到此规定的约束，系统应用、HALs，deamon进程不受影响，它们依然可以使用非公开库。
+
+\section[影响行为]{影响行为}
+普通app打开.so文件的任意行为均受限制，DT_NEEDED方式（编译时引用动态库）
+dlopen方式System.loadLibrary() （本质上使用dlopen函数）以上行为均受该规定约束。
+
+\section[实现原理]{实现原理}
+该限制是在android的动态链接器中实现的，源码在bionic/linker/中，所以无论是编译期引用，
+dlopen还是loadLibrary()都无法跳过该规则，因为它们都是通过linker实现的。
+
+\section[解决方案]{解决方案}
+vendor允许提供额外的公开库，
+\begin{enumerate}
+  \item 把需要公开的库文件放到/vendor/lib或者/vendor/lib64目录中
+  \item 把库文件的名字添加到/vendor/qcom/proprietary/common/config/public.linraries.txt中，
+  该文件最终会被复制为手机的/vendor/etc/public.libraries.txt
+\end{enumerate}
+
+此外，也可以将用到的非公开库（依赖关系比较简单的库，如libcutils.so）复制到apk中，官方推荐将这些库的源码复制到项目的源码树中开发维护。
+
+\section[实用技巧]{实用技巧}
+\begin{itemize}
+  \item readelf --dynamic libExample.so | grep NEEDED可以查看依赖哪些动态库
+  \item 在root过的手机上，把普通app的安装目录（如/data/app/com.ybin.demo/）
+  move到/system/priv-app/中，即可将普通app转换为system app。
+\end{itemize}
+
+\section[参考文献]{参考文献}
+\begin{itemize}
+  \item https://source.android.com/devices/tech/config/namespaces_libraries
+  \item https://android-developers.googleblog.com/2016/06/improving-stability-with-private-cc.html?m=1
+  \item https://www.slideshare.net/mobile/BinYang7/linker-namespace-upload
+  \item http://forum.cocos.com/t/ndk-android/39547
+\end{itemize}
+
+\section[附录]{附录（public native API, libXXX.so）}
+\begin{enumerate}
+    \item android
+    \item c
+    \item dl
+    \item jnigraphics
+    \item log
+    \item m
+    \item m_hard
+    \item stdc++
+    \item z
+    \item EGL
+    \item GLESv1_CM
+    \item GLESv2
+    \item GLESv3
+    \item vulkan
+    \item OpenSLES
+    \item OpenMAXAL
+    \item mediandk
+    \item atomic
+\end{enumerate}
+
+这些公开库在platform/system/core/rootdir/etc/public.libraries.android.txt中定义，
+该文件会复制到手机的/system/etc/public.libraries.txt文件中。注意，该文件会进行CTS测试，
+所以无法修改。此外，NDK的platforms/android-X/<arch>/usr/lib目录提供了完整的公开库列表。
+
+\end{document}

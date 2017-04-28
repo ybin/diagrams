@@ -1,0 +1,114 @@
+
+\usepackage{xparse}
+\usepackage{underscore}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,arrows.meta,positioning,calc,backgrounds,matrix,fit,decorations.pathreplacing}
+
+%%% environment struct: [label][style for dummy node]{name}{width}{height}
+\DeclareDocumentEnvironment{struct}{ O{} O{} m m m }
+{
+    \newcount\index
+    \newcommand{\diaName}{#3}
+    \newcommand{\diaWidth}{#4}
+    \newcommand{\diaHeight}{#5}
+    \newcommand{\updateIndex}{\advance\index by 1\relax}
+    \newcommand{\lastId}{\diaName-\the\numexpr\index-1\relax}
+    \newcommand{\id}{\diaName-\the\index}
+    %% \record[style for node]{node content}
+    \newcommand{\record}[2][]{
+        \node[fixed node={\diaWidth}{\diaHeight},below=of \lastId, ##1](\id){##2};
+        \updateIndex
+    }
+    %% dummy node for label(title)
+    \node[draw,fixed node={\diaWidth}{0em},label={[name=\diaName-label,yshift=0.5em]\textbf{#1}},#2](\id){};\updateIndex
+}
+{
+    %% dummy node for wrapping all nodes in this environment
+    \node[fit=(\diaName-0)(\lastId),inner sep=0pt](\diaName){};
+}
+%%% environment struct end
+
+
+%%% environment arr: [label][style for dummy node]{name}{width}{height}
+\DeclareDocumentEnvironment{arr}{ O{} O{} m O{3em} O{1em} }
+{
+    \newcount\index
+    \newcommand{\diaName}{#3}
+    \newcommand{\diaWidth}{#4}
+    \newcommand{\diaHeight}{#5}
+    \newcommand{\updateIndex}{\advance\index by 1\relax}
+    \newcommand{\lastId}{\diaName-\the\numexpr\index-1\relax}
+    \newcommand{\id}{\diaName-\the\index}
+    %% \element[style for node]{node content}
+    \newcommand{\element}[2][]{
+        \node[label=below:\tiny{\the\numexpr\index-1\relax},fixed node={\diaWidth}{\diaHeight},right=of \lastId, ##1](\id){##2};
+        \updateIndex
+    }
+    \newcommand{\elem}[2][]{
+        \node[fixed node={\diaWidth}{\diaHeight},right=of \lastId, ##1](\id){##2};
+        \updateIndex
+    }
+    %% dummy node for label(title)
+    \node[draw,fixed node={0em}{\diaHeight},label={[name=\diaName-label]180:{\bf #1}},#2](\id){};\updateIndex
+}
+{
+    %% dummy node for wrapping all nodes in this environment
+    \node[fit=(\diaName-0)(\lastId),inner sep=0pt](\diaName){};
+}
+%%% environment struct end
+
+
+\tikzset{
+    table/.style 2 args={
+        draw,
+        rectangle,
+        inner sep=0pt,
+        matrix of nodes,
+        nodes in empty cells,
+        nodes={
+            draw,
+            font=\ttfamily,
+            align=center,
+            text width=#1,
+            outer sep=0pt,
+            inner sep=0.3em,
+            minimum height=1.6em
+        },
+        label={[align=center]90:\bf{#2}}
+    },
+    table/.default={10cm}{},
+    right brace/.style 2 args={
+        decorate,
+        decoration={brace,amplitude=#1,raise=#2}
+    },
+    right brace/.default={8pt}{2pt},
+    right note/.style={right=#1},
+    right note/.default={0.3cm},
+    left note/.style={left=#1},
+    left note/.default={0.3cm},
+    left brace/.style 2 args={
+        decorate,
+        decoration={brace,amplitude=#1,raise=#2,mirror}
+    },
+    left brace/.default={8pt}{2pt},
+    right addr note/.style={right=#1},
+    right addr note/.default={0.5cm},
+    left addr note/.style={left=#1},
+    left addr note/.default={0.5cm},
+    arrow/.style={>=stealth',->},
+    fixed node/.style 2 args={
+        node distance=0,
+        outer sep=0,
+        inner sep=0,
+        draw=white,
+        fill=green!50,
+        font=\ttfamily,
+        rectangle,
+        align=center,
+        minimum width=#1,
+        minimum height=#2
+    },
+    title node/.style={rectangle,inner sep=1em},
+    blank cell/.style={fill=white,minimum height=1cm},
+    non blank cell/.style={fill=cyan!30,minimum height=#1}
+}

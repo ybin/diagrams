@@ -1,0 +1,226 @@
+\documentclass[border=10pt]{standalone}
+\input{config}
+
+\newcommand{\methodcolor}{blue!80}
+\begin{document}
+\begin{tikzpicture}
+
+%%%%%%%%%%% APIs
+\begin{struct}[BokehProcessService][]{BokehProcessService}{8cm}{3em}
+    \record{BokehProcessThreadManager \\ mBokehProcessThreadManager;}
+    \record[text=\methodcolor]{void parseServiceKey(Intent intent, \\ ServiceBokehProcessRequest request);}
+\end{struct}
+
+\begin{struct}[BokehProcessThreadManager][below=2cm of BokehProcessService]{BokehProcessThreadManager}{8cm}{3em}
+    \record{ServiceBokehProcessThread \\ mServiceBokehProcessThread;}
+    \record[text=\methodcolor]{void addServiceBokehThreadData(\\ServiceBokehProcessRequest r);}
+    \record[text=\methodcolor]{int bokehCaptureImageProcess(\\BokehProcessRequest r);}
+    \record[text=\methodcolor]{int refocusImageProcess(\\BokehProcessRequest r);}
+    \record[text=\methodcolor]{void saveImage();}
+    \record[text=red]{void sentBroadCastToCameraRefocus(\\byte[] data, int dataLen, String fileName)}
+\end{struct}
+
+\begin{struct}[ServiceBokehProcessThread][right=2cm of BokehProcessService-0]{ServiceBokehProcessThread}{8cm}{3em}
+    \record{ArrayList<ServiceBokehProcessRequest>\\ mFileDataQueue;}
+    \record[text=\methodcolor]{void addBokehImage(\\ServiceBokehProcessRequest r);}
+%    \record[text=\methodcolor]{boolean parseServiceDataFile(
+%                                        \\ServiceBokehProcessRequest serviceRequest,
+%                                        \\BokehProcessRequest bokehRequest);}
+    \record[text=\methodcolor]{void run();}
+\end{struct}
+
+\begin{struct}[ServiceBokehProcessRequest][below=2cm of ServiceBokehProcessThread]{ServiceBokehProcessRequest}{5cm}{2em}
+    \record{String filename;}
+    \record{Uri uri;}
+    \record{boolean isRefocus;}
+    \record{int pos_x;}
+    \record{int pos_y;}
+    \record{int blurIdx;}
+    \record{int captureMode;}
+\end{struct}
+
+
+%%%%%%%%%%%%%% internal implementation
+\begin{struct}[IMG_AltekRefocus][below=5cm of BokehProcessThreadManager]{IMGAltekRefocus}{8cm}{2em}
+    \record{int altekRefocusInit();}
+    \record{int altekRefocusConfigParameter();}
+    \record{int altekRefocusConfigEffectParameter()}
+    \record{int altekRefocusProcessByPostion()}
+    \record{int altekRefocusClose()}
+    \record{int altekRefocusVersionInfo_Get();}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{int altekSDE2Int()}
+    \record{int altekSDE2Run()}
+    \record{int altekSDE2DepthGen()}
+    \record{int altekSDE2Close()}
+    \record[minimum height=0.2em,fill=black]{}
+    \record{int openApertureProcessLibrary(..)}
+    \record{int YUVDataPreProcessing()}
+    \record{int altekRefocusCaptureProcess()}
+    \record{int altekTouchRefocusProcess()}
+    \record{int closeApertureProcessLibrary()}
+\end{struct}
+
+\begin{struct}[GPUProcess][right=2cm of IMGAltekRefocus-0]{GPUProcess}{8cm}{2em}
+    \record{int setGPUConfigResolutionPadding()}
+    \record{int setGPURotation()}
+    \record{int setGPUImageAlpha()}
+    \record{int setGPUConfigBufferSizePadding()}
+    \record{int setGPUConfigImageFormat()}
+    \record{int setGPUProcessResolution()}
+    \record{int GPUProcessModle()}
+    \record{int GPUProcessYUVConversion()}
+    \record{int GPURotateProcess()}
+    \record{int GPUNV21ScaleDown()}
+    \record{void GPUNV21ToRGBConvertConfig()}
+    \record{void GPUNV21ToRGBConvert()}
+\end{struct}
+
+\begin{struct}[ZTEImagePost][below=1.5cm of GPUProcess]{ZTEImagePost}{5cm}{2em}
+    \record{int ZTEYUVN12DePadding()}
+    \record{int ZTERGBAToYUVNV21()}
+    \record{int ZTErgb2yuv()}
+    \record{......}
+\end{struct}
+
+\begin{struct}[JNIs][below=1cm of IMGAltekRefocus]{jni}{6cm}{2em}
+    \record[fill=gray]{libaltek_post_jni.so}
+    \record[fill=gray]{libGPU_post_jni.so}
+    \record[fill=gray]{libZTE_ImagePost.so}
+    \record[fill=gray]{libjpeg_encode_hw_jni.so}
+    \record[fill=gray]{libAltekImagePost.so(for 3D)}
+\end{struct}
+
+
+%%%%%%%%%% background
+%%% service group
+\begin{pgfonlayer}{background}
+   \node [fill=black!8,inner sep=5em,fit=(BokehProcessService)(GPUProcess)(IMGAltekRefocus)(ServiceBokehProcessThread)(ZTEImagePost)(jni)] (service) {};
+\end{pgfonlayer}
+%%% APIs
+\begin{pgfonlayer}{background}
+   \node [fill=black!16,inner sep=2em,fit=(BokehProcessService)(BokehProcessThreadManager)(ServiceBokehProcessThread)] (api) {};
+\end{pgfonlayer}
+%%% implementation
+\begin{pgfonlayer}{background}
+   \node [fill=black!16,inner sep=2em,fit=(GPUProcess)(IMGAltekRefocus)(ZTEImagePost)(jni)] (impl) {};
+\end{pgfonlayer}
+
+\node[fill=black!16, below=1cm of api,inner sep=1em] {data parameters~~(BokehProcessRequest, AltekImageProcess)};
+
+
+%%%%%%%%%%%%%%% data structures
+\begin{struct}[BokehProcessRequest][below=3cm of service,xshift=-4cm]{BokehProcessRequest}{7cm}{2em}
+    \record{AltekImageProcess mAltekImageProcess;}
+    \record{byte[] OutputBokehProcessData;}
+    \record{byte[] OutputDisparityData;}
+    \record{byte[] MainDataDepadding;}
+    \record{byte[] MainDataDepaddingScale;}
+    \record{byte[] SlaveDataDepadding;}
+    \record{byte[] MedianBuffer;}
+    \record{byte[] MainDataScaleForPost0;}
+    \record{byte[] MainDataScaleForPost1;}
+    \record{byte[] MainDataScaleForPost2;}
+    \record{byte[] MainDataPostOutPut;}
+    \record{byte[] OutputJpegStream;}
+    \record{int mPostImageWidth;}
+    \record{int mPostImageHeight;}
+\end{struct}
+
+\begin{struct}[AltekImageProcess][right=3cm of BokehProcessRequest-0]{AltekImageProcess}{5cm}{2em}
+    \record{int dVCMStep;}
+    \record{int dSubVcmStep;}
+    \record{float fExpTime;}
+    \record{int dISO;}
+    \record{int dImgW;}
+    \record{int dImgH;}
+    \record{float fVirtualFNo;}
+    \record{int dRelativePositionX;}
+    \record{int dRelativePositionY;}
+    \record{byte[] acOTPData;}
+    \record{int dOTPSize;}
+    \record{byte[] acCalibData;}
+    \record{int dCalibSize;}
+    \record{float fFno;}
+    \record{int dBlurLevel;}
+    \record{int dDepthImgW;}
+    \record{int dDepthImgH;}
+    \record{int mJpegRotation;}
+    \record{int dSpeedMode;}
+    \record{int dPatternMode;}
+    \record{int apertureIdx;}
+    \record{String filename;}
+    \record{Location location;}
+    \record{long dateTaken;}
+    \record{boolean isPostRefocus;}
+    \record{Uri uri;}
+    \record{int captureMode;}
+\end{struct}
+
+
+%%%%%%%%%%%%%%%% UI layer
+\node[left=14cm of api] (activity) {RefocusActivity};
+\node[right=1cm of activity] (controller) {ImageRefocusControler};
+\node[right=1cm of controller] (view) {Views};
+%%% ui
+\begin{pgfonlayer}{background}
+   \node [fill=black!16,inner sep=2em,fit=(activity)(controller)(view)] (v) {};
+\end{pgfonlayer}
+\node[right=8cm of api,fill=black!16,inner sep=2em] (dual) {DualModuleView};
+
+
+%%%%%%%%%%%%%% ÒµÎñ²ã
+\begin{struct}[BokehCaptureProcess][below=3cm of dual]{BokehCaptureProcess}{8cm}{3em}
+    \record{CameraDeviceInterface mCameraDevice;}
+    \record{CameraDeviceInterface mCameraSubDevice}
+    \record{AltekImageProcess mAltekImageProcess}
+    \record[text=\methodcolor]{void initApertureProcess()}
+    \record[text=\methodcolor]{void deinitApertureProcess()}
+    \record[text=\methodcolor]{int openApertureProcess()}
+    \record[text=\methodcolor]{void setApertureDeviceProcess()}
+    \record[text=\methodcolor]{void setCaptureMode()}
+    \record[text=\methodcolor]{void setAperturePictureSizeParameter()}
+    \record[text=\methodcolor]{void setApertureParameter()}
+    \record[text=\methodcolor]{void setApertureProcessImageParameter()}
+    \record[text=\methodcolor]{int doApertureProcess()}
+    \record[text=\methodcolor]{void encoderImageAndStorage()}
+    \record[text=red,minimum height=4em]{void sendBokehProcessBroadcast(\\AltekImageProcess p,\\ BokehProcessRequest r)}
+\end{struct}
+
+
+\begin{struct}[RefocusProcess][below=3cm of v]{RefocusProcess}{9cm}{3em}
+    \record{AutoReviewView mAutoReviewView}
+    \record{RefocusAutoReviewView mRefocusAutoReviewView}
+    \record[text=\methodcolor]{void initImageRefocusProcess();}
+    \record[minimum height=0.2em,fill=black]{}
+    \record[text=\methodcolor]{void showBitmapFromJPEG();}
+    \record[text=\methodcolor]{int showBitmapFromYUVByGPU();}
+    \record[text=\methodcolor]{int JpegEncoderBySW();}
+    \record[text=\methodcolor]{byte[] JpegEncoderWithGPU();}
+    \record[text=\methodcolor]{int jpegEncoderByHW();}
+    \record[text=\methodcolor]{int YUVImageRotateWithGPU();}
+    \record[minimum height=0.2em,fill=black]{}
+    \record[text=\methodcolor]{int configRefocusParameter()}
+    \record[text=\methodcolor]{void adjustBoekhValueProcess\\(int bokehLevel, boolean isCamera);}
+    \record[text=\methodcolor]{void touchImageRefocusProcess\\(int x, int y, boolean isCamera);}
+    \record[text=\methodcolor]{void saveImage();}
+    \record[text=\methodcolor]{void cancelImage();}
+    \record[text=red]{void sentBroadcast(String fileName,
+            \\int pos_x, int pos_y, int blurLevelIdx);}
+\end{struct}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% lines
+\draw[-Implies,line width=1pt,double distance=5pt] (v) -- node[right,midway,fill=yellow]{callback} ([yshift=2em]RefocusProcess.north);
+\draw[-Implies,line width=1pt,double distance=5pt] (dual) -- node[right,midway,fill=yellow]{func call} ([yshift=2em]BokehCaptureProcess.north);
+\draw[-Implies,line width=1pt,double distance=5pt] (RefocusProcess.east) -- node[above,midway,fill=yellow]{Intent} (api.west);
+\draw[-Implies,line width=1pt,double distance=5pt] ([yshift=-3cm]RefocusProcess.east) -- node[above,midway,fill=yellow]{func call} (impl);
+\draw[-Implies,line width=1pt,double distance=5pt] (BokehCaptureProcess.west) -- node[above,midway,fill=yellow]{Intent} (api.east);
+\draw[-Implies,line width=1pt,double distance=5pt] ([yshift=-3cm]BokehCaptureProcess.west) -- node[above,midway,fill=yellow]{func call} (impl);
+\draw[-Implies,line width=1pt,double distance=5pt] (api) -- node[right,midway,fill=yellow]{func call} (impl);
+\draw[-Implies,line width=1pt,double distance=5pt] ([yshift=3em]BokehProcessThreadManager) -- node[above,midway,fill=yellow]{enqueue} ([yshift=3em]ServiceBokehProcessThread);
+\draw[-Implies,line width=1pt,double distance=5pt] ([yshift=-3em]ServiceBokehProcessThread) -- node[below,midway,fill=yellow]{dequeue, func call} ([yshift=-3em]BokehProcessThreadManager);
+
+
+\end{tikzpicture}
+\end{document}
